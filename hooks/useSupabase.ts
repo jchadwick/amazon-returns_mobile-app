@@ -12,11 +12,6 @@ export const useSupabase = () => {
     process.env.EXPO_PUBLIC_ORDERS_API_KEY!
   );
 
-  supabase.auth.signInWithPassword({
-    email: process.env.EXPO_PUBLIC_ORDERS_TEST_USERNAME!,
-    password: process.env.EXPO_PUBLIC_ORDERS_TEST_PASSWORD!,
-  });
-
   return supabase;
 };
 

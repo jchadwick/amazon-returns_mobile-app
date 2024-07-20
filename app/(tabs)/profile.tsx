@@ -1,14 +1,28 @@
-import { StyleSheet } from 'react-native';
+import { Button, StyleSheet } from "react-native";
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+import EditScreenInfo from "@/components/EditScreenInfo";
+import { Text, View } from "@/components/Themed";
+import useSupabase from "@/hooks/useSupabase";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function ProfileScreen() {
+  const supabase = useSupabase();
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/profile.tsx" />
+      <Text style={styles.title}>Logged in as {user?.email}</Text>
+
+      <Button
+        title="Logout"
+        onPress={async () => {
+          console.log(await supabase.auth.signOut());
+          queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+          queryClient.refetchQueries({ queryKey: ["currentUser"] });
+        }}
+      />
     </View>
   );
 }
@@ -16,16 +30,16 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   separator: {
     marginVertical: 30,
     height: 1,
-    width: '80%',
+    width: "80%",
   },
 });

@@ -14,6 +14,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
 import "./global.css";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import LoginScreen from "./login";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -49,20 +51,29 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootLayoutNav />
+    </QueryClientProvider>
+  );
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { user } = useCurrentUser();
+
+  console.log("user", user);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      {user?.id === "-1" ? (
+        <LoginScreen />
+      ) : (
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal" }} />
         </Stack>
-      </ThemeProvider>
-    </QueryClientProvider>
+      )}
+    </ThemeProvider>
   );
 }
