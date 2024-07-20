@@ -1,31 +1,145 @@
-import { StyleSheet } from 'react-native';
+import { Text, View } from "@/components/Themed";
+import { useOrderProducts } from "@/hooks/useOrderProducts";
+import { OrderProduct } from "@/model";
+import clsx from "clsx";
+import { useState } from "react";
+import { Button, Image, ScrollView, TouchableOpacity } from "react-native";
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+export default function ReturnsScreen() {
+  const { orderProducts: returns, markAsReturned } = useOrderProducts({
+    status: "return_created",
+  });
 
-export default function TabOneScreen() {
+  const [selectedReturn, setSelectedReturn] = useState<OrderProduct | null>(
+    null
+  );
+
+  return selectedReturn ? (
+    <OrderProductView
+      orderProduct={selectedReturn}
+      onClose={() => setSelectedReturn(null)}
+      onReturned={() => markAsReturned(selectedReturn)}
+      onPrevious={() => {
+        setSelectedReturn(
+          returns?.[returns?.indexOf(selectedReturn) - 1 || 0] || null
+        );
+      }}
+      onNext={() => {
+        setSelectedReturn(
+          returns?.[returns?.indexOf(selectedReturn) + 1 || 0] || null
+        );
+      }}
+      hasNext={
+        (returns?.indexOf(selectedReturn) || 0) < (returns?.length || 0) - 1 ||
+        false
+      }
+      hasPrevious={(returns?.indexOf(selectedReturn) || 0) > 0 || false}
+    />
+  ) : (
+    <OrderProductList returns={returns || []} onSelected={setSelectedReturn} />
+  );
+}
+
+function OrderProductView({
+  hasNext,
+  hasPrevious,
+  orderProduct,
+  onClose,
+  onPrevious,
+  onNext,
+  onReturned,
+}: {
+  hasNext: boolean;
+  hasPrevious: boolean;
+  orderProduct: OrderProduct;
+  onClose: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onReturned: () => void;
+}) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+    <View className="flex flex-col w-full h-full p-2 gap-3">
+      <View className="flex flex-row w-full justify-end">
+        <Button title="X" onPress={() => onClose()} />
+      </View>
+      <View className="flex flex-row p-4 gap-4 items-center ">
+        <Image
+          className="size-24 shadow-md"
+          source={{ uri: orderProduct.product_image_url }}
+        />
+        <Text className="text-2xl">{orderProduct.product_name}</Text>
+      </View>
+      <View className="grow flex flex-col m-5 items-center justify-center gap-3">
+        <View className="m-auto text-center">
+          <Image
+            className="inset-0 aspect-square object-fit"
+            source={require("../../assets/images/testQrCode.png")}
+          />
+        </View>
+        <Text className="text-xl">{orderProduct.return_method}</Text>
+      </View>
+      <View className="flex flex-row h-20 justify-between">
+        <View className="w-1/4">
+          <NavigationButton disabled={!hasPrevious} onPress={onPrevious}>
+            Prev
+          </NavigationButton>
+        </View>
+        <View className="w-1/2 h-full p-3">
+          <NavigationButton onPress={onReturned}>
+            Mark
+            <br />
+            Returned
+          </NavigationButton>
+        </View>
+        <View className="w-1/4 h-full">
+          <NavigationButton disabled={!hasNext} onPress={onNext}>
+            Next
+          </NavigationButton>
+        </View>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});
+function NavigationButton({ disabled, onPress, children }: any) {
+  return (
+    <TouchableOpacity
+      className={clsx(
+        "flex align-middle items-center justify-center text-center rounded-sm p-2 w-full h-full",
+        {
+          "bg-gray-300": disabled,
+          "text-white": !disabled,
+          "bg-blue-500": !disabled,
+        }
+      )}
+      disabled={disabled}
+      onPress={onPress}
+      activeOpacity={1}
+    >
+      {children}
+    </TouchableOpacity>
+  );
+}
+
+function OrderProductList({
+  returns,
+  onSelected,
+}: {
+  returns: OrderProduct[];
+  onSelected: (x: OrderProduct) => void;
+}) {
+  return (
+    <ScrollView className="grow flex flex-col w-full h-32 p-2">
+      {returns?.map((x) => (
+        <TouchableOpacity
+          key={x.id}
+          className="flex flex-row gap-3 rounded-md bg-white p-2 my-1 shadow-sm justify-center items-center"
+          onPress={() => onSelected(x)}
+        >
+          <Image className="size-24" source={{ uri: x.product_image_url }} />
+          <Text className="grow text-lg">{x.product_name}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
