@@ -1,9 +1,9 @@
 import { UserProfile } from "@/model";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 
 export const useCurrentUser = () => {
   return useQuery({
-    queryKey: "currentUser",
+    queryKey: ["currentUser"],
     queryFn: async (): Promise<UserProfile> =>
       Promise.resolve({
         id: "f4cf683e-b0d0-4bdc-9d1a-af8cbf8b1f80",
