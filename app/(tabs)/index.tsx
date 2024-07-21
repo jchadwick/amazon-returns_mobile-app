@@ -3,7 +3,8 @@ import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { OrderProduct } from "@/model";
 import clsx from "clsx";
 import { useState } from "react";
-import { Button, Image, ScrollView, TouchableOpacity } from "react-native";
+import { Button, Image, TouchableOpacity } from "react-native";
+import { OrderProductList } from "../../components/OrderProductList";
 
 export default function ReturnsScreen() {
   const { orderProducts: returns, markAsReturned } = useOrderProducts({
@@ -36,7 +37,7 @@ export default function ReturnsScreen() {
       hasPrevious={(returns?.indexOf(selectedReturn) || 0) > 0 || false}
     />
   ) : (
-    <OrderProductList returns={returns || []} onSelected={setSelectedReturn} />
+    <OrderProductList orders={returns || []} onSelected={setSelectedReturn} />
   );
 }
 
@@ -118,28 +119,5 @@ function NavigationButton({ disabled, onPress, children }: any) {
     >
       {children}
     </TouchableOpacity>
-  );
-}
-
-function OrderProductList({
-  returns,
-  onSelected,
-}: {
-  returns: OrderProduct[];
-  onSelected: (x: OrderProduct) => void;
-}) {
-  return (
-    <ScrollView className="grow flex flex-col w-full h-32 p-2">
-      {returns?.map((x) => (
-        <TouchableOpacity
-          key={x.id}
-          className="flex flex-row gap-3 rounded-md bg-white p-2 my-1 shadow-sm justify-center items-center"
-          onPress={() => onSelected(x)}
-        >
-          <Image className="size-24" source={{ uri: x.product_image_url }} />
-          <Text className="grow text-lg">{x.product_name}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
   );
 }
