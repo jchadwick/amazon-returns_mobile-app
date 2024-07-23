@@ -43,6 +43,17 @@ export const ReturnLocations = [
   "ups_store",
   "ups_dropoff",
   "ups_pickup",
+  "unknown",
 ] as const;
 
 export type ReturnLocation = (typeof ReturnLocations)[number];
+
+export const ReturnLocationNames: Record<ReturnLocation, string> = {
+  kohls: "Kohl's",
+  staples: "Staples",
+  whole_foods: "Whole Foods",
+  ups_store: "UPS Store",
+  ups_dropoff: "UPS Dropoff",
+  ups_pickup: "UPS Pickup",
+  unknown: "Unknown",
+};

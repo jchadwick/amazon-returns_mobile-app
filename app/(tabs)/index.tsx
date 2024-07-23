@@ -1,19 +1,32 @@
 import { Text, View } from "@/components/Themed";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
-import { OrderProduct } from "@/model";
+import { OrderProduct, ReturnLocation, ReturnLocationNames } from "@/model";
 import clsx from "clsx";
-import { useState } from "react";
-import { Button, Image, TouchableOpacity } from "react-native";
+import { useMemo, useState } from "react";
+import { Button, Image, Pressable } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
 import { OrderProductList } from "../../components/OrderProductList";
 
 export default function ReturnsScreen() {
-  const { orderProducts: returns, markAsReturned } = useOrderProducts({
-    status: "return_created",
-  });
-
   const [selectedReturn, setSelectedReturn] = useState<OrderProduct | null>(
     null
   );
+
+  const {
+    query: { isLoading },
+    orderProducts: returns,
+    markAsReturned,
+  } = useOrderProducts({
+    status: "return_created",
+  });
+
+  if (isLoading) {
+    return (
+      <View className="grow flex flex-col justify-center items-center">
+        Loading...
+      </View>
+    );
+  }
 
   return selectedReturn ? (
     <OrderProductView
@@ -37,7 +50,100 @@ export default function ReturnsScreen() {
       hasPrevious={(returns?.indexOf(selectedReturn) || 0) > 0 || false}
     />
   ) : (
-    <OrderProductList orders={returns || []} onSelected={setSelectedReturn} />
+    <ReturnsList returns={returns || []} onReturnSelected={setSelectedReturn} />
+  );
+}
+
+function ReturnsList({
+  returns,
+  onReturnSelected,
+}: {
+  returns: OrderProduct[];
+  onReturnSelected: (x: OrderProduct) => void;
+}) {
+  const [selectedLocation, setSelectedLocation] = useState<
+    ReturnLocation | "all"
+  >();
+
+  const returnsByLocation: Record<ReturnLocation, OrderProduct[]> =
+    useMemo(() => {
+      return (
+        (returns || [])?.filter((x) => x.return_location) as (OrderProduct & {
+          return_location: string;
+        })[]
+      ).reduce((acc, x) => {
+        if (!acc[x.return_location!]) {
+          acc[x.return_location!] = [];
+        }
+        acc[x.return_location!].push(x);
+        return acc;
+      }, {} as Record<ReturnLocation, OrderProduct[]>);
+    }, [returns]);
+
+  const returnsForSelectedLocation = useMemo(() => {
+    return (
+      returns?.filter(
+        (x) =>
+          !selectedLocation ||
+          selectedLocation === "all" ||
+          x.return_location === selectedLocation
+      ) || []
+    );
+  }, [returns, selectedLocation]);
+
+  const returnLocationOptions = useMemo(() => {
+    return [
+      { label: "All Locations", value: "all" },
+      ...Object.keys(returnsByLocation).map((x) => ({
+        label: `${ReturnLocationNames[x as ReturnLocation]} (${
+          returnsByLocation[x].length
+        })`,
+        value: x as ReturnLocation,
+      })),
+    ];
+  }, [returnsByLocation]);
+
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+
+  const returnLocationCount = Object.keys(returnsByLocation).length;
+
+  return (
+    <View
+      className="flex flex-col gap-3 grow"
+      style={{ backgroundColor: "transparent" }}
+    >
+      {returnLocationCount === 0 && (
+        <Text className="text-2xl">No Returns</Text>
+      )}
+      {returnLocationCount === 1 && (
+        <Text className="ml-2 mt-2 text-2xl">
+          {
+            ReturnLocationNames[
+              Object.keys(returnsByLocation)[0] as ReturnLocation
+            ]
+          }
+        </Text>
+      )}
+      {returnLocationCount > 1 && (
+        <View
+          className="flex flex-row gap-3 justify-between"
+          style={{ zIndex: 100, elevation: 100 }}
+        >
+          <DropDownPicker
+            placeholder="All Locations"
+            open={locationPickerOpen}
+            value={selectedLocation!}
+            items={returnLocationOptions}
+            setOpen={setLocationPickerOpen}
+            setValue={setSelectedLocation}
+          />
+        </View>
+      )}
+      <OrderProductList
+        orders={returnsForSelectedLocation}
+        onSelected={onReturnSelected}
+      />
+    </View>
   );
 }
 
@@ -104,7 +210,7 @@ function OrderProductView({
 
 function NavigationButton({ disabled, onPress, children }: any) {
   return (
-    <TouchableOpacity
+    <Pressable
       className={clsx(
         "flex align-middle items-center justify-center text-center rounded-sm p-2 w-full h-full",
         {
@@ -115,9 +221,8 @@ function NavigationButton({ disabled, onPress, children }: any) {
       )}
       disabled={disabled}
       onPress={onPress}
-      activeOpacity={1}
     >
       {children}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
