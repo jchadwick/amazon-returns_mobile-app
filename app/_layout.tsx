@@ -1,4 +1,5 @@
 import "react-native-reanimated";
+import "./global.css";
 import { useColorScheme } from "@/components/useColorScheme";
 import queryClient from "@/lib/queryClient";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -12,8 +13,6 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-
-import "./global.css";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import LoginScreen from "./login";
 
@@ -62,18 +61,12 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { user } = useCurrentUser();
 
-  console.log("user", user);
-
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      {user?.id === "-1" ? (
-        <LoginScreen />
-      ) : (
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      )}
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
     </ThemeProvider>
   );
 }

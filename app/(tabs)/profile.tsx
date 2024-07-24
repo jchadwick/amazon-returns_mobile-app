@@ -1,10 +1,8 @@
-import { Button, StyleSheet } from "react-native";
-
-import EditScreenInfo from "@/components/EditScreenInfo";
 import { Text, View } from "@/components/Themed";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import useSupabase from "@/hooks/useSupabase";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { Pressable, StyleSheet } from "react-native";
 
 export default function ProfileScreen() {
   const supabase = useSupabase();
@@ -15,14 +13,15 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Logged in as {user?.email}</Text>
 
-      <Button
-        title="Logout"
+      <Pressable
         onPress={async () => {
           console.log(await supabase.auth.signOut());
           queryClient.invalidateQueries({ queryKey: ["currentUser"] });
           queryClient.refetchQueries({ queryKey: ["currentUser"] });
         }}
-      />
+      >
+        <Text>Logout</Text>
+      </Pressable>
     </View>
   );
 }

@@ -3,7 +3,7 @@ import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { OrderProduct, ReturnLocation, ReturnLocationNames } from "@/model";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { Button, Image, Pressable } from "react-native";
+import { Image, Pressable } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { OrderProductList } from "../../components/OrderProductList";
 
@@ -167,7 +167,9 @@ function OrderProductView({
   return (
     <View className="flex flex-col w-full h-full p-2 gap-3">
       <View className="flex flex-row w-full justify-end">
-        <Button title="X" onPress={() => onClose()} />
+        <Pressable onPress={() => onClose()}>
+          <Text>X</Text>
+        </Pressable>
       </View>
       <View className="flex flex-row p-4 gap-4 items-center ">
         <Image
@@ -188,19 +190,21 @@ function OrderProductView({
       <View className="flex flex-row h-20 justify-between">
         <View className="w-1/4">
           <NavigationButton disabled={!hasPrevious} onPress={onPrevious}>
-            Prev
+            <Text>Prev</Text>
           </NavigationButton>
         </View>
         <View className="w-1/2 h-full p-3">
           <NavigationButton onPress={onReturned}>
-            Mark
-            <br />
-            Returned
+            <Text>
+              Mark
+              <br />
+              Returned
+            </Text>
           </NavigationButton>
         </View>
         <View className="w-1/4 h-full">
           <NavigationButton disabled={!hasNext} onPress={onNext}>
-            Next
+            <Text>Next</Text>
           </NavigationButton>
         </View>
       </View>
