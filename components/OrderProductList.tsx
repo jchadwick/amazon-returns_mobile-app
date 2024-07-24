@@ -1,5 +1,6 @@
 import { OrderProduct } from "@/model";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
 
 export function OrderProductList({
   orders,
@@ -17,10 +18,13 @@ export function OrderProductList({
           onPress={() => onSelected(x)}
         >
           <Image
-            className="max-w-24 min-w-24 size-24 self-center"
-            source={{ uri: x.product_image_url }}
+            source={x.product_image_url}
+            cachePolicy="memory-disk"
+            contentFit="cover"
+            transition={500}
+            style={{ width: 75, height: 75 }}
           />
-          <View className="grow flex flex-col justify-between h-full px-2 py-4">
+          <View className="grow flex flex-col justify-between h-full px-2 py-2">
             <Text className="text-lg">{x.product_name}</Text>
             <Text className="text-md text-gray-500">{x.return_method}</Text>
           </View>

@@ -3,9 +3,10 @@ import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { OrderProduct, ReturnLocation, ReturnLocationNames } from "@/model";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { Image, Pressable } from "react-native";
+import { Pressable } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { OrderProductList } from "../../components/OrderProductList";
+import { Image } from "expo-image";
 
 export default function ReturnsScreen() {
   const [selectedReturn, setSelectedReturn] = useState<OrderProduct | null>(
@@ -173,16 +174,22 @@ function OrderProductView({
       </View>
       <View className="flex flex-row p-4 gap-4 items-center ">
         <Image
-          className="size-24 shadow-md"
-          source={{ uri: orderProduct.product_image_url }}
+          className="shadow-md"
+          source={orderProduct.product_image_url}
+          cachePolicy="memory-disk"
+          contentFit="cover"
+          transition={200}
+          style={{ width: 100, height: 100 }}
         />
         <Text className="text-2xl">{orderProduct.product_name}</Text>
       </View>
       <View className="grow flex flex-col m-5 items-center justify-center gap-3">
         <View className="m-auto text-center">
           <Image
-            className="inset-0 aspect-square object-fit"
-            source={require("../../assets/images/testQrCode.png")}
+            cachePolicy="memory-disk"
+            contentFit="cover"
+            style={{ width: 250, height: 250 }}
+            source={orderProduct.return_image_url}
           />
         </View>
         <Text className="text-xl">{orderProduct.return_method}</Text>
