@@ -40,7 +40,7 @@ COPY . .
 # build the app
 # RUN  --mount=type=cache,id=turbo-cache,target=./.turbo-cache \
 #     npx turbo build --cache-dir=./.turbo-cache
-RUN npm run build:web
+RUN npx expo export --platform web --output-dir dist/web
 
 ############################
 # prod container
