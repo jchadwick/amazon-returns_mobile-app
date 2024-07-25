@@ -1,0 +1,122 @@
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  pull_request:
+    branches:
+      - main
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+  # Use the short SHA as the image tag
+  IMAGE_TAG: ${{ github.repository }}:${{ github.sha }}
+
+jobs:
+  build:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/docker-npm-cache
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Login against a Docker registry (except on PR)
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Docker image
+        id: create-docker-image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          build-args: |
+            GIT_BRANCH=${{ github.ref_name }}
+            GIT_SHA=${{ github.sha }}
+          load: true
+          push: false
+          tags: ${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start Docker container
+        run: docker run -d -p 5173:80 --name app ${{ env.IMAGE_TAG }}
+
+      - name: Health check
+        id: healthcheck
+        run: |
+          # Check the health status of the application running in the container
+          if curl -sSf --retry-all-errors --retry 5 --retry-delay 5 http://localhost:5173/healthcheck >/dev/null; then
+            echo "Health check passed"
+            exit 0
+          else
+            echo "Health check failed"
+            exit 1
+          fi
+
+      # - name: Tests
+      #   if: steps.healthcheck.outcome == 'success'
+      #   run: |
+      #     npm clean-install --no-audit --no-fund --loglevel error --cache /tmp/docker-npm-cache
+      #     npx playwright install --with-deps
+      #     npm run test:ci
+
+      - name: Stop Docker container
+        run: docker stop app
+
+      # Build and push Docker image
+      - name: Push Docker image
+        id: push-docker-image
+        if: steps.healthcheck.outcome == 'success' && github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          build-args: |
+            GIT_BRANCH=${{ github.ref_name }}
+            GIT_SHA=${{ github.sha }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # - name: Archive test results
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: e2e-report
+      #     path: output/results/e2e.json

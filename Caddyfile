@@ -1,0 +1,9 @@
+{
+	auto_https off
+}
+
+:{$PORT} {
+	root * /www/html
+	try_files {path} {path}/ /index.html
+	file_server
+}
