@@ -2,7 +2,7 @@ import { Text, View } from "@/components/Themed";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { OrderProduct, ReturnLocation, ReturnLocationNames } from "@/model";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Pressable } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { OrderProductList } from "../../components/OrderProductList";
@@ -21,6 +21,16 @@ export default function ReturnsScreen() {
     status: "return_created",
   });
 
+  const returnsForSelectedLocation = useMemo(
+    () =>
+      returns?.filter(
+        (x) =>
+          !selectedReturn?.return_location ||
+          x.return_location === selectedReturn?.return_location
+      ) || [],
+    [returns, selectedReturn?.return_location]
+  );
+
   if (isLoading) {
     return (
       <View className="grow flex flex-col justify-center items-center">
@@ -36,19 +46,25 @@ export default function ReturnsScreen() {
       onReturned={() => markAsReturned(selectedReturn)}
       onPrevious={() => {
         setSelectedReturn(
-          returns?.[returns?.indexOf(selectedReturn) - 1 || 0] || null
+          returnsForSelectedLocation?.[
+            returnsForSelectedLocation?.indexOf(selectedReturn) - 1 || 0
+          ] || null
         );
       }}
       onNext={() => {
         setSelectedReturn(
-          returns?.[returns?.indexOf(selectedReturn) + 1 || 0] || null
+          returnsForSelectedLocation?.[
+            returnsForSelectedLocation?.indexOf(selectedReturn) + 1 || 0
+          ] || null
         );
       }}
       hasNext={
-        (returns?.indexOf(selectedReturn) || 0) < (returns?.length || 0) - 1 ||
-        false
+        (returnsForSelectedLocation?.indexOf(selectedReturn) || 0) <
+          (returnsForSelectedLocation?.length || 0) - 1 || false
       }
-      hasPrevious={(returns?.indexOf(selectedReturn) || 0) > 0 || false}
+      hasPrevious={
+        (returnsForSelectedLocation?.indexOf(selectedReturn) || 0) > 0 || false
+      }
     />
   ) : (
     <ReturnsList returns={returns || []} onReturnSelected={setSelectedReturn} />
@@ -116,16 +132,7 @@ function ReturnsList({
       {returnLocationCount === 0 && (
         <Text className="text-2xl">No Returns</Text>
       )}
-      {returnLocationCount === 1 && (
-        <Text className="ml-2 mt-2 text-2xl">
-          {
-            ReturnLocationNames[
-              Object.keys(returnsByLocation)[0] as ReturnLocation
-            ]
-          }
-        </Text>
-      )}
-      {returnLocationCount > 1 && (
+      {/* {returnLocationCount > 1 && (
         <View
           className="flex flex-row gap-3 justify-between"
           style={{ zIndex: 100, elevation: 100 }}
@@ -139,11 +146,19 @@ function ReturnsList({
             setValue={setSelectedLocation}
           />
         </View>
-      )}
-      <OrderProductList
-        orders={returnsForSelectedLocation}
-        onSelected={onReturnSelected}
-      />
+      )} */}
+      {returnLocationCount > 0 &&
+        (Object.keys(returnsByLocation) as ReturnLocation[]).map((location) => (
+          <Fragment key={location}>
+            <Text className="ml-2 mt-2 text-2xl">
+              {ReturnLocationNames[location]}
+            </Text>
+            <OrderProductList
+              orders={returnsByLocation[location]}
+              onSelected={onReturnSelected}
+            />
+          </Fragment>
+        ))}
     </View>
   );
 }

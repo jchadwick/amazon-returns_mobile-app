@@ -1,12 +1,15 @@
 import { User } from "@supabase/supabase-js";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useSupabase from "./useSupabase";
 
 export const useCurrentUser = () => {
+  const queryKey = ["currentUser"];
+
   const supabase = useSupabase();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["currentUser"],
+    queryKey,
     queryFn: async (): Promise<User> =>
       (await supabase.auth.getSession()).data.session?.user ||
       ({
@@ -15,5 +18,11 @@ export const useCurrentUser = () => {
       } as User),
   });
 
-  return { query, user: query.data };
+  const signout = async () => {
+    await supabase.auth.signOut();
+    queryClient.invalidateQueries({ queryKey });
+    queryClient.refetchQueries({ queryKey });
+  };
+
+  return { query, user: query.data, signout };
 };
