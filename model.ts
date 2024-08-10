@@ -16,6 +16,7 @@ export interface OrderProduct {
   product_name: string | undefined;
   product_url: string | undefined;
   product_image_url: string | undefined;
+  return_date: Date | undefined;
   return_url: string | undefined;
   return_location: ReturnLocation | undefined;
   return_method: string | undefined;

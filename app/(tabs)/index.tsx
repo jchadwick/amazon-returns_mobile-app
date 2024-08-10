@@ -1,12 +1,11 @@
 import { Text, View } from "@/components/Themed";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { OrderProduct, ReturnLocation, ReturnLocationNames } from "@/model";
-import clsx from "clsx";
+import { router } from "expo-router";
 import { Fragment, useMemo, useState } from "react";
-import { Pressable } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
 import { OrderProductList } from "../../components/OrderProductList";
-import { Image } from "expo-image";
+import { Modal } from "react-native";
+import ReturnsWizard from "@/components/ReturnsWizard";
 
 export default function ReturnsScreen() {
   const [selectedReturn, setSelectedReturn] = useState<OrderProduct | null>(
@@ -16,20 +15,9 @@ export default function ReturnsScreen() {
   const {
     query: { isLoading },
     orderProducts: returns,
-    markAsReturned,
   } = useOrderProducts({
     status: "return_created",
   });
-
-  const returnsForSelectedLocation = useMemo(
-    () =>
-      returns?.filter(
-        (x) =>
-          !selectedReturn?.return_location ||
-          x.return_location === selectedReturn?.return_location
-      ) || [],
-    [returns, selectedReturn?.return_location]
-  );
 
   if (isLoading) {
     return (
@@ -39,35 +27,21 @@ export default function ReturnsScreen() {
     );
   }
 
-  return selectedReturn ? (
-    <OrderProductView
-      orderProduct={selectedReturn}
-      onClose={() => setSelectedReturn(null)}
-      onReturned={() => markAsReturned(selectedReturn)}
-      onPrevious={() => {
-        setSelectedReturn(
-          returnsForSelectedLocation?.[
-            returnsForSelectedLocation?.indexOf(selectedReturn) - 1 || 0
-          ] || null
-        );
-      }}
-      onNext={() => {
-        setSelectedReturn(
-          returnsForSelectedLocation?.[
-            returnsForSelectedLocation?.indexOf(selectedReturn) + 1 || 0
-          ] || null
-        );
-      }}
-      hasNext={
-        (returnsForSelectedLocation?.indexOf(selectedReturn) || 0) <
-          (returnsForSelectedLocation?.length || 0) - 1 || false
-      }
-      hasPrevious={
-        (returnsForSelectedLocation?.indexOf(selectedReturn) || 0) > 0 || false
-      }
-    />
-  ) : (
-    <ReturnsList returns={returns || []} onReturnSelected={setSelectedReturn} />
+  return (
+    <>
+      <ReturnsList
+        returns={returns || []}
+        onReturnSelected={setSelectedReturn}
+      />
+      {selectedReturn && (
+        <Modal animationType="slide" visible>
+          <ReturnsWizard
+            selectedReturn={selectedReturn}
+            onClose={() => setSelectedReturn(null)}
+          />
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -78,10 +52,6 @@ function ReturnsList({
   returns: OrderProduct[];
   onReturnSelected: (x: OrderProduct) => void;
 }) {
-  const [selectedLocation, setSelectedLocation] = useState<
-    ReturnLocation | "all"
-  >();
-
   const returnsByLocation: Record<ReturnLocation, OrderProduct[]> =
     useMemo(() => {
       return (
@@ -97,31 +67,6 @@ function ReturnsList({
       }, {} as Record<ReturnLocation, OrderProduct[]>);
     }, [returns]);
 
-  const returnsForSelectedLocation = useMemo(() => {
-    return (
-      returns?.filter(
-        (x) =>
-          !selectedLocation ||
-          selectedLocation === "all" ||
-          x.return_location === selectedLocation
-      ) || []
-    );
-  }, [returns, selectedLocation]);
-
-  const returnLocationOptions = useMemo(() => {
-    return [
-      { label: "All Locations", value: "all" },
-      ...Object.keys(returnsByLocation).map((x) => ({
-        label: `${ReturnLocationNames[x as ReturnLocation]} (${
-          returnsByLocation[x].length
-        })`,
-        value: x as ReturnLocation,
-      })),
-    ];
-  }, [returnsByLocation]);
-
-  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
-
   const returnLocationCount = Object.keys(returnsByLocation).length;
 
   return (
@@ -132,27 +77,18 @@ function ReturnsList({
       {returnLocationCount === 0 && (
         <Text className="text-2xl">No Returns</Text>
       )}
-      {/* {returnLocationCount > 1 && (
-        <View
-          className="flex flex-row gap-3 justify-between"
-          style={{ zIndex: 100, elevation: 100 }}
-        >
-          <DropDownPicker
-            placeholder="All Locations"
-            open={locationPickerOpen}
-            value={selectedLocation!}
-            items={returnLocationOptions}
-            setOpen={setLocationPickerOpen}
-            setValue={setSelectedLocation}
-          />
-        </View>
-      )} */}
       {returnLocationCount > 0 &&
         (Object.keys(returnsByLocation) as ReturnLocation[]).map((location) => (
           <Fragment key={location}>
-            <Text className="ml-2 mt-2 text-2xl">
-              {ReturnLocationNames[location]}
-            </Text>
+            <View
+              className="ml-2 mt-2 flex flex-row items-center"
+              style={{ backgroundColor: "transparent" }}
+            >
+              <Text className="text-2xl">{ReturnLocationNames[location]}</Text>
+              <Text className="ml-2">
+                ({returnsByLocation[location].length})
+              </Text>
+            </View>
             <OrderProductList
               orders={returnsByLocation[location]}
               onSelected={onReturnSelected}
@@ -160,95 +96,5 @@ function ReturnsList({
           </Fragment>
         ))}
     </View>
-  );
-}
-
-function OrderProductView({
-  hasNext,
-  hasPrevious,
-  orderProduct,
-  onClose,
-  onPrevious,
-  onNext,
-  onReturned,
-}: {
-  hasNext: boolean;
-  hasPrevious: boolean;
-  orderProduct: OrderProduct;
-  onClose: () => void;
-  onPrevious: () => void;
-  onNext: () => void;
-  onReturned: () => void;
-}) {
-  return (
-    <View className="flex flex-col w-full h-full p-2 gap-3">
-      <View className="flex flex-row w-full justify-end">
-        <Pressable onPress={() => onClose()}>
-          <Text>X</Text>
-        </Pressable>
-      </View>
-      <View className="flex flex-row p-4 gap-4 items-center ">
-        <Image
-          className="shadow-md"
-          source={orderProduct.product_image_url}
-          cachePolicy="memory-disk"
-          contentFit="cover"
-          transition={200}
-          style={{ width: 100, height: 100 }}
-        />
-        <Text className="text-2xl">{orderProduct.product_name}</Text>
-      </View>
-      <View className="grow flex flex-col m-5 items-center justify-center gap-3">
-        <View className="m-auto text-center">
-          <Image
-            cachePolicy="memory-disk"
-            contentFit="cover"
-            style={{ width: 250, height: 250 }}
-            source={orderProduct.return_image_url}
-          />
-        </View>
-        <Text className="text-xl">{orderProduct.return_method}</Text>
-      </View>
-      <View className="flex flex-row h-20 justify-between">
-        <View className="w-1/4">
-          <NavigationButton disabled={!hasPrevious} onPress={onPrevious}>
-            <Text>Prev</Text>
-          </NavigationButton>
-        </View>
-        <View className="w-1/2 h-full p-3">
-          <NavigationButton onPress={onReturned}>
-            <Text>
-              Mark
-              <br />
-              Returned
-            </Text>
-          </NavigationButton>
-        </View>
-        <View className="w-1/4 h-full">
-          <NavigationButton disabled={!hasNext} onPress={onNext}>
-            <Text>Next</Text>
-          </NavigationButton>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function NavigationButton({ disabled, onPress, children }: any) {
-  return (
-    <Pressable
-      className={clsx(
-        "flex align-middle items-center justify-center text-center rounded-sm p-2 w-full h-full",
-        {
-          "bg-gray-300": disabled,
-          "text-white": !disabled,
-          "bg-blue-500": !disabled,
-        }
-      )}
-      disabled={disabled}
-      onPress={onPress}
-    >
-      {children}
-    </Pressable>
   );
 }
