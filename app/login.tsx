@@ -10,6 +10,7 @@ const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
 
   const handleLogin = async () => {
     setError("");
@@ -29,6 +30,27 @@ const LoginScreen = () => {
 
     console.log(`Sucessfully logged in user `, data.user);
     queryClient.refetchQueries({ queryKey: ["currentUser"] });
+  };
+
+  const handleMagicLink = async () => {
+    setError("");
+    
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+    });
+
+    if (error) {
+      setError(error.message);
+      console.error(error);
+      return;
+    }
+
+    setIsMagicLinkSent(true);
   };
 
   return (
@@ -55,7 +77,15 @@ const LoginScreen = () => {
           <Text className="text-red-500">{error}</Text>
         </View>
       )}
-      <Button title="Login" onPress={handleLogin} />
+      {isMagicLinkSent && (
+        <Text style={styles.successMessage}>
+          Check your email for the magic link!
+        </Text>
+      )}
+      <Button title="Login with Password" onPress={handleLogin} />
+      <View style={styles.magicLinkButton}>
+        <Button disabled={!email} title="Login with Magic Link" onPress={handleMagicLink} />
+      </View>
     </View>
   );
 };
@@ -80,6 +110,15 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     marginTop: 16,
+  },
+  magicLinkButton: {
+    marginTop: 12,
+  },
+  successMessage: {
+    textAlign: 'center',
+    color: 'green',
+    marginTop: 12,
+    marginBottom: 12,
   },
 });
 
