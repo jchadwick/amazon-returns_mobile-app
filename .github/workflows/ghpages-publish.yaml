@@ -1,4 +1,5 @@
-name: Publish Docker image
+name: Publish to GitHub Pages
+
 
 on:
   push:
@@ -21,7 +22,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and publish Docker image
+    name: Build and publish to GitHub Pages
     runs-on: ubuntu-latest
 
     steps:
